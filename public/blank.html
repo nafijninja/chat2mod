@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simple Website</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background-color: #0078ff;
+      color: white;
+      padding: 20px;
+      font-size: 24px;
+    }
+
+    main {
+      padding: 20px;
+    }
+
+    button {
+      background-color: #0078ff;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background-color: #005bb5;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- blank.html -->
+  <div id="blank-content">
+    <p>No messages yet! Please send a message.</p>
+  </div>
+
+  <header>Welcome to My Simple Website</header>
+  <main>
+    <p>Click the button below to see a message:</p>
+    <button onclick="showMessage()">Click Me</button>
+    <p id="message"></p>
+  </main>
+  <script>
+    function showMessage() {
+      document.getElementById('message').textContent = 'Hello, welcome to my simple website!';
+    }
+  </script>
+</body>
+
+</html>

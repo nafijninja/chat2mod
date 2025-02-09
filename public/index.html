@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Messenger Clone</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f5f7fb;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+      transition: background-color 0.3s ease;
+    }
+
+    #chat-container {
+      width: 100%;
+      max-width: 480px;
+      height: 600px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.3s ease;
+    }
+
+    #messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 15px;
+      margin: 10px;
+      box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.05);
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    .message {
+      background: #ffffff;
+      padding: 12px 18px;
+      margin: 12px 0;
+      border-radius: 20px;
+      max-width: 80%;
+      word-wrap: break-word;
+      position: relative;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      animation: slideIn 0.4s ease-out;
+      font-size: 16px;
+    }
+
+    .message .reaction {
+      font-size: 22px;
+      position: absolute;
+      bottom: -25px;
+      right: 5px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .message:hover .reaction {
+      opacity: 1;
+    }
+
+    #input-area {
+      display: flex;
+      padding: 15px 20px;
+      background: #ffffff;
+      border-top: 1px solid #ddd;
+      align-items: center;
+      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s ease;
+    }
+
+    #input-area input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      margin-right: 10px;
+      border-radius: 30px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+      transition: border-color 0.3s ease;
+    }
+
+    #input-area input[type="text"]:focus {
+      border-color: #007bff;
+    }
+
+    #input-area button {
+      background: #007bff;
+      border: none;
+      padding: 12px;
+      border-radius: 50%;
+      color: #ffffff;
+      font-size: 22px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    #input-area button:hover {
+      background: #0056b3;
+    }
+
+    #settings-icon {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      cursor: pointer;
+      font-size: 28px;
+      color: #007bff;
+      z-index: 1000;
+      transition: transform 0.3s ease, color 0.3s ease;
+    }
+
+    #settings-icon:hover {
+      transform: rotate(90deg);
+      color: #0056b3;
+    }
+
+    #settings-panel {
+      display: none;
+      position: absolute;
+      top: 60px;
+      right: 20px;
+      background: white;
+      padding: 15px;
+      border-radius: 12px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+      width: 230px;
+      z-index: 1000;
+      animation: slideInPanel 0.4s ease-out;
+    }
+
+    #quick-reaction-btn {
+      background: none;
+      border: none;
+      font-size: 26px;
+      color: #007bff;
+      cursor: pointer;
+      margin-left: 10px;
+      transition: color 0.3s ease;
+    }
+
+    #quick-reaction-btn:hover {
+      color: #0056b3;
+    }
+
+    #reaction-picker {
+      position: absolute;
+      bottom: 60px;
+      background: #ffffff;
+      border: 1px solid #ccc;
+      padding: 12px;
+      display: none;
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    #reaction-picker button {
+      background: none;
+      border: none;
+      font-size: 26px;
+      color: #007bff;
+      cursor: pointer;
+      margin-right: 10px;
+      transition: color 0.3s ease;
+    }
+
+    #reaction-picker button:hover {
+      color: #0056b3;
+    }
+
+    @keyframes fadeIn {
+      0% {
+        opacity: 0;
+      }
+
+      100% {
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideIn {
+      0% {
+        transform: translateX(100%);
+      }
+
+      100% {
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes slideInPanel {
+      0% {
+        transform: translateY(-50px);
+      }
+
+      100% {
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="chat-container">
+    <div id="settings-icon" onclick="toggleSettings()">⚙️</div>
+    <div id="settings-panel">
+      <label>Username: </label>
+      <input type="text" id="username" placeholder="Enter username">
+      <button onclick="saveUsername()">Save</button>
+      <br>
+      <label>Quick Reactions: </label>
+      <input type="text" id="reaction-emoji" placeholder="😊,😂,❤️">
+      <button onclick="saveReactions()">Save</button>
+      <br>
+      <label>Theme: </label>
+      <select id="theme-select" onchange="changeTheme()">
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+      </select>
+    </div>
+
+    <div id="messages"></div>
+
+    <div id="input-area">
+      <input type="file" id="file-input" style="display:none;" onchange="sendFile()">
+      <button onclick="document.getElementById('file-input').click()">📎</button>
+      <input type="text" id="message" placeholder="Type a message...">
+      <button onclick="sendMessage()">Send</button>
+      <button id="quick-reaction-btn" onclick="toggleReactionPicker()">😊</button>
+    </div>
+
+    <!-- Reaction Picker -->
+    <div id="reaction-picker">
+      <button onclick="sendQuickReaction('😊')">😊</button>
+      <button onclick="sendQuickReaction('😂')">😂</button>
+      <button onclick="sendQuickReaction('❤️')">❤️</button>
+      <button onclick="sendQuickReaction('😎')">😎</button>
+      <button onclick="sendQuickReaction('👍')">👍</button>
+      <button onclick="sendQuickReaction('🔥')">🔥</button>
+      <button onclick="sendQuickReaction('🎉')">🎉</button>
+      <button onclick="sendQuickReaction('😭')">😭</button>
+      <button onclick="sendQuickReaction('😡')">😡</button>
+      <button onclick="sendQuickReaction('🤩')">🤩</button>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const messagesDiv = document.getElementById('messages');
+    let username = localStorage.getItem('username') || 'Anonymous';
+    let quickReactions = localStorage.getItem('quickReactions')?.split(',') || ['😊', '😂', '❤️'];
+
+    socket.emit('set username', username);
+
+    // Fetch messages from MongoDB and local JSON on page load
+    fetch('/messages')
+      .then(response => response.json())
+      .then(messages => {
+        messages.forEach(msg => displayMessage(msg));
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      })
+      .catch(error => console.error('Error fetching messages:', error));
+
+    function sendMessage() {
+      const messageInput = document.getElementById('message');
+      const msg = messageInput.value.trim();
+      if (msg) {
+        socket.emit('chat message', { text: msg, user: username });
+        messageInput.value = '';
+      }
+    }
+
+    function displayMessage(msg) {
+      const messageElement = document.createElement('div');
+      messageElement.classList.add('message');
+      messageElement.setAttribute('data-id', msg._id); // Store message ID for reactions
+
+      if (msg.fileUrl) {
+        messageElement.innerHTML = `<strong>${msg.user}:</strong> <a href="${msg.fileUrl}" target="_blank">${msg.fileName}</a>`;
+      } else {
+        messageElement.innerHTML = `<strong>${msg.user}:</strong> ${msg.text || msg.reaction || ''}`;
+      }
+
+      // Add quick reaction button
+      const reactionBtn = document.createElement('button');
+      reactionBtn.textContent = '😊';
+      reactionBtn.onclick = () => sendQuickReaction(msg._id);
+      messageElement.appendChild(reactionBtn);
+
+      messagesDiv.appendChild(messageElement);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    socket.on('chat message', displayMessage);
+
+    // File upload
+    function sendFile() {
+      const fileInput = document.getElementById('file-input');
+      const file = fileInput.files[0];
+      if (file) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        fetch('/upload', { method: 'POST', body: formData })
+          .then(response => response.json())
+          .then(data => {
+            if (data.fileUrl) {
+              socket.emit('file message', { fileUrl: data.fileUrl, fileName: data.fileName, user: username });
+            }
+          })
+          .catch(error => console.error('Error uploading file:', error));
+      }
+    }
+
+    socket.on('file message', displayMessage);
+
+    // Quick Reactions
+    function sendQuickReaction(messageId) {
+      const reaction = quickReactions[Math.floor(Math.random() * quickReactions.length)];
+      socket.emit('chat reaction', { messageId, reaction, user: username });
+    }
+
+    socket.on('chat reaction', (reactionData) => {
+      const messageElement = document.querySelector(`[data-id="${reactionData.messageId}"]`);
+      if (messageElement) {
+        const reactionSpan = document.createElement('span');
+        reactionSpan.textContent = ` ${reactionData.reaction}`;
+        messageElement.appendChild(reactionSpan);
+      }
+    });
+
+    function saveUsername() {
+      username = document.getElementById('username').value;
+      localStorage.setItem('username', username);
+      socket.emit('set username', username);
+    }
+
+    function saveReactions() {
+      quickReactions = document.getElementById('reaction-emoji').value.split(',');
+      localStorage.setItem('quickReactions', quickReactions.join(','));
+    }
+
+    function changeTheme() {
+      const theme = document.getElementById('theme-select').value;
+      document.body.style.backgroundColor = theme === 'dark' ? '#333' : '#f5f7fb';
+    }
+
+    function toggleSettings() {
+      const panel = document.getElementById('settings-panel');
+      panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+    }
+  </script>
+
+
+</body>
+
+</html>
