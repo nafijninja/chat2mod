@@ -291,7 +291,7 @@
       // Add quick reaction button
       const reactionBtn = document.createElement('button');
       reactionBtn.textContent = '😊';
-      reactionBtn.onclick = () => sendQuickReaction(msg._id);
+      reactionBtn.onclick = () => toggleReactionPicker(msg._id);  // Pass message ID for reaction
       messageElement.appendChild(reactionBtn);
 
       messagesDiv.appendChild(messageElement);
@@ -322,8 +322,7 @@
     socket.on('file message', displayMessage);
 
     // Quick Reactions
-    function sendQuickReaction(messageId) {
-      const reaction = quickReactions[Math.floor(Math.random() * quickReactions.length)];
+    function sendQuickReaction(messageId, reaction) {
       socket.emit('chat reaction', { messageId, reaction, user: username });
     }
 
@@ -357,7 +356,7 @@
       panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
     }
 
-    function toggleReactionPicker() {
+    function toggleReactionPicker(messageId) {
       const reactionPicker = document.getElementById('reaction-picker');
       reactionPicker.style.display = reactionPicker.style.display === 'block' ? 'none' : 'block';
       
@@ -371,7 +370,7 @@
       quickReactions.forEach(emoji => {
         const button = document.createElement('button');
         button.textContent = emoji;
-        button.onclick = () => sendQuickReaction(emoji);
+        button.onclick = () => sendQuickReaction(messageId, emoji);  // Pass the message ID along with reaction
         document.getElementById('reaction-picker').appendChild(button);
       });
     }
