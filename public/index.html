@@ -291,7 +291,7 @@
       // Add quick reaction button
       const reactionBtn = document.createElement('button');
       reactionBtn.textContent = '😊';
-      reactionBtn.onclick = () => toggleReactionPicker(msg._id);  // Pass message ID for reaction
+      reactionBtn.onclick = () => sendQuickReaction(msg._id);  // Send reaction as message
       messageElement.appendChild(reactionBtn);
 
       messagesDiv.appendChild(messageElement);
@@ -321,19 +321,12 @@
 
     socket.on('file message', displayMessage);
 
-    // Quick Reactions
-    function sendQuickReaction(messageId, reaction) {
-      socket.emit('chat reaction', { messageId, reaction, user: username });
+    // Send quick reaction as a message
+    function sendQuickReaction(messageId) {
+      const reaction = '😊'; // Example, you can set this dynamically
+      const msg = `${username} reacted with ${reaction}`;
+      socket.emit('chat message', { text: msg, user: username });
     }
-
-    socket.on('chat reaction', (reactionData) => {
-      const messageElement = document.querySelector(`[data-id="${reactionData.messageId}"]`);
-      if (messageElement) {
-        const reactionSpan = document.createElement('span');
-        reactionSpan.textContent = ` ${reactionData.reaction}`;
-        messageElement.appendChild(reactionSpan);
-      }
-    });
 
     function saveUsername() {
       username = document.getElementById('username').value;
@@ -356,7 +349,7 @@
       panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
     }
 
-    function toggleReactionPicker(messageId) {
+    function toggleReactionPicker() {
       const reactionPicker = document.getElementById('reaction-picker');
       reactionPicker.style.display = reactionPicker.style.display === 'block' ? 'none' : 'block';
       
@@ -370,7 +363,7 @@
       quickReactions.forEach(emoji => {
         const button = document.createElement('button');
         button.textContent = emoji;
-        button.onclick = () => sendQuickReaction(messageId, emoji);  // Pass the message ID along with reaction
+        button.onclick = () => sendQuickReaction();  // Send as message
         document.getElementById('reaction-picker').appendChild(button);
       });
     }
