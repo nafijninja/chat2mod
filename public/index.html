@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chat App</title>
-    <style>
+  <title>Messenger Clone</title>
+  <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background-color: #f5f7fb;
@@ -208,110 +209,172 @@
       }
     }
   </style>
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js"></script>
 </head>
+
 <body>
-  <div class="chat-container">
-    <div class="chat-header">
-      <h2>Chat App</h2>
+  <div id="chat-container">
+    <div id="settings-icon" onclick="toggleSettings()">⚙️</div>
+    <div id="settings-panel">
+      <label>Username: </label>
+      <input type="text" id="username" placeholder="Enter username">
+      <button onclick="saveUsername()">Save</button>
+      <br>
+      <label>Quick Reactions: </label>
+      <input type="text" id="reaction-emoji" placeholder="😊,😂,❤️">
+      <button onclick="saveReactions()">Save</button>
+      <br>
+      <label>Theme: </label>
+      <select id="theme-select" onchange="changeTheme()">
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+      </select>
     </div>
-    <div id="messages" class="messages"></div>
-    <div class="chat-footer">
-      <input id="messageInput" type="text" placeholder="Type a message..." />
-      <button id="sendBtn">Send</button>
-      <div class="quick-reactions">
-        <button onClick="handleQuickReaction('👍')">👍</button>
-        <button onClick="handleQuickReaction('❤️')">❤️</button>
-        <button onClick="handleQuickReaction('😂')">😂</button>
-        <button onClick="handleQuickReaction('😢')">😢</button>
-        <button onClick="handleQuickReaction('😎')">😎</button>
-      </div>
+
+    <div id="messages"></div>
+
+    <div id="input-area">
+      <input type="file" id="file-input" style="display:none;" onchange="sendFile()">
+      <button onclick="document.getElementById('file-input').click()">📎</button>
+      <input type="text" id="message" placeholder="Type a message...">
+      <button onclick="sendMessage()">Send</button>
+      <button id="quick-reaction-btn" onclick="toggleReactionPicker()">😊</button>
     </div>
+
+    <!-- Reaction Picker -->
+    <div id="reaction-picker"></div>
   </div>
 
+  <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
+    const messagesDiv = document.getElementById('messages');
+    let username = localStorage.getItem('username') || 'Anonymous';
+    let quickReactions = localStorage.getItem('quickReactions')?.split(',') || ['😊', '😂', '❤️'];
 
-    // Send message to server
-    const sendMessage = (msgText) => {
-      socket.emit('chat message', { text: msgText });
-    };
+    socket.emit('set username', username);
 
-    // Handle sending quick reaction as normal message
-    const handleQuickReaction = (reactionEmoji) => {
-      socket.emit('send quick reaction', reactionEmoji); // Send emoji as normal message
-    };
+    // Fetch messages from MongoDB and local JSON on page load
+    fetch('/messages')
+      .then(response => response.json())
+      .then(messages => {
+        messages.forEach(msg => displayMessage(msg));
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      })
+      .catch(error => console.error('Error fetching messages:', error));
 
-    // Display received messages
-    socket.on('chat message', (msg) => {
-      const messageContainer = document.createElement('div');
-      messageContainer.classList.add('message');
-      messageContainer.innerHTML = `
-        <strong>${msg.user}:</strong>
-        <p>${msg.text || msg.reaction}</p>
-        <span class="timestamp">${msg.timestamp}</span>
-      `;
-      document.getElementById('messages').appendChild(messageContainer);
-    });
-
-    // Display quick reactions as messages
-    socket.on('chat reaction', (reaction) => {
-      const messageContainer = document.createElement('div');
-      messageContainer.classList.add('message');
-      messageContainer.innerHTML = `
-        <strong>${reaction.user}:</strong>
-        <p>${reaction.reaction}</p>
-        <span class="timestamp">${reaction.timestamp}</span>
-      `;
-      document.getElementById('messages').appendChild(messageContainer);
-    });
-
-    // Get initial messages from server
-    socket.emit('load messages');
-
-    // Listen for existing messages on page load
-    socket.on('load messages', (messages) => {
-      messages.forEach(msg => {
-        const messageContainer = document.createElement('div');
-        messageContainer.classList.add('message');
-        messageContainer.innerHTML = `
-          <strong>${msg.user}:</strong>
-          <p>${msg.text || msg.reaction}</p>
-          <span class="timestamp">${msg.timestamp}</span>
-        `;
-        document.getElementById('messages').appendChild(messageContainer);
-      });
-    });
-
-    // Send message on button click
-    document.getElementById('sendBtn').addEventListener('click', () => {
-      const messageInput = document.getElementById('messageInput');
-      const messageText = messageInput.value.trim();
-      if (messageText) {
-        sendMessage(messageText);
-        messageInput.value = ''; // Clear input after sending
+    function sendMessage() {
+      const messageInput = document.getElementById('message');
+      const msg = messageInput.value.trim();
+      if (msg) {
+        socket.emit('chat message', { text: msg, user: username });
+        messageInput.value = '';
       }
-    });
-
-    // Send message on Enter key press
-    document.getElementById('messageInput').addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        const messageInput = document.getElementById('messageInput');
-        const messageText = messageInput.value.trim();
-        if (messageText) {
-          sendMessage(messageText);
-          messageInput.value = ''; // Clear input after sending
-        }
-      }
-    });
-
-    // Function to format timestamp
-    function formatTimestamp(timestamp) {
-      const date = moment(timestamp);
-      return date.isValid() ? date.format('hh:mm A') : 'Invalid Time';
     }
 
+    function displayMessage(msg) {
+      const messageElement = document.createElement('div');
+      messageElement.classList.add('message');
+      messageElement.setAttribute('data-id', msg._id); // Store message ID for reactions
+
+      const timestamp = new Date(msg.timestamp);
+      const hours = timestamp.getHours();
+      const minutes = timestamp.getMinutes();
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const formattedTime = `${(hours % 12) || 12}:${minutes < 10 ? '0' + minutes : minutes} ${ampm}`;
+
+      if (msg.fileUrl) {
+        messageElement.innerHTML = `<strong>${msg.user}:</strong> <a href="${msg.fileUrl}" target="_blank">${msg.fileName}</a> <span class="timestamp">${formattedTime}</span>`;
+      } else {
+        messageElement.innerHTML = `<strong>${msg.user}:</strong> ${msg.text || msg.reaction || ''} <span class="timestamp">${formattedTime}</span>`;
+      }
+
+      // Add quick reaction button
+      const reactionBtn = document.createElement('button');
+      reactionBtn.textContent = '😊';
+      reactionBtn.onclick = () => toggleReactionPicker(msg._id);  // Pass message ID for reaction
+      messageElement.appendChild(reactionBtn);
+
+      messagesDiv.appendChild(messageElement);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    socket.on('chat message', displayMessage);
+
+    // File upload
+    function sendFile() {
+      const fileInput = document.getElementById('file-input');
+      const file = fileInput.files[0];
+      if (file) {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        fetch('/upload', { method: 'POST', body: formData })
+          .then(response => response.json())
+          .then(data => {
+            if (data.fileUrl) {
+              socket.emit('file message', { fileUrl: data.fileUrl, fileName: data.fileName, user: username });
+            }
+          })
+          .catch(error => console.error('Error uploading file:', error));
+      }
+    }
+
+    socket.on('file message', displayMessage);
+
+    // Quick Reactions
+    function sendQuickReaction(messageId, reaction) {
+      socket.emit('chat reaction', { messageId, reaction, user: username });
+    }
+
+    socket.on('chat reaction', (reactionData) => {
+      const messageElement = document.querySelector(`[data-id="${reactionData.messageId}"]`);
+      if (messageElement) {
+        const reactionSpan = document.createElement('span');
+        reactionSpan.textContent = ` ${reactionData.reaction}`;
+        messageElement.appendChild(reactionSpan);
+      }
+    });
+
+    function saveUsername() {
+      username = document.getElementById('username').value;
+      localStorage.setItem('username', username);
+      socket.emit('set username', username);
+    }
+
+    function saveReactions() {
+      quickReactions = document.getElementById('reaction-emoji').value.split(',');
+      localStorage.setItem('quickReactions', quickReactions.join(','));
+    }
+
+    function changeTheme() {
+      const theme = document.getElementById('theme-select').value;
+      document.body.style.backgroundColor = theme === 'dark' ? '#333' : '#f5f7fb';
+    }
+
+    function toggleSettings() {
+      const panel = document.getElementById('settings-panel');
+      panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function toggleReactionPicker(messageId) {
+      const reactionPicker = document.getElementById('reaction-picker');
+      reactionPicker.style.display = reactionPicker.style.display === 'block' ? 'none' : 'block';
+      
+      // Clear existing buttons in the picker
+      const pickerButtons = document.getElementById('reaction-picker').getElementsByTagName('button');
+      while (pickerButtons.length > 0) {
+        pickerButtons[0].remove();
+      }
+
+      // Add buttons for each reaction emoji from settings
+      quickReactions.forEach(emoji => {
+        const button = document.createElement('button');
+        button.textContent = emoji;
+        button.onclick = () => sendQuickReaction(messageId, emoji);  // Pass the message ID along with reaction
+        document.getElementById('reaction-picker').appendChild(button);
+      });
+    }
   </script>
 </body>
+
 </html>
