@@ -291,7 +291,7 @@
       // Add quick reaction button
       const reactionBtn = document.createElement('button');
       reactionBtn.textContent = '😊';
-      reactionBtn.onclick = () => sendQuickReaction(msg._id);  // Send reaction as message
+      reactionBtn.onclick = () => sendQuickReaction();  // Send reaction as message
       messageElement.appendChild(reactionBtn);
 
       messagesDiv.appendChild(messageElement);
@@ -321,11 +321,10 @@
 
     socket.on('file message', displayMessage);
 
-    // Send quick reaction as a message
-    function sendQuickReaction(messageId) {
-      const reaction = '😊'; // Example, you can set this dynamically
-      const msg = `${username} reacted with ${reaction}`;
-      socket.emit('chat message', { text: msg, user: username });
+    // Send selected quick reaction emoji as a regular message
+    function sendQuickReaction() {
+      const selectedReaction = quickReactions[0]; // Get the first emoji from the list for now
+      socket.emit('chat message', { text: selectedReaction, user: username });
     }
 
     function saveUsername() {
@@ -355,7 +354,7 @@
       quickReactions.forEach(reaction => {
         const reactionButton = document.createElement('button');
         reactionButton.textContent = reaction;
-        reactionButton.onclick = () => sendQuickReaction(reaction);
+        reactionButton.onclick = () => sendQuickReaction(reaction);  // Send selected emoji as message
         picker.appendChild(reactionButton);
       });
     }
