@@ -336,12 +336,7 @@
 
     function saveReactions() {
       quickReactions = document.getElementById('reaction-emoji').value.split(',');
-      localStorage.setItem('quickReactions', quickReactions.join(','));
-    }
-
-    function changeTheme() {
-      const theme = document.getElementById('theme-select').value;
-      document.body.style.backgroundColor = theme === 'dark' ? '#333' : '#f5f7fb';
+      localStorage.setItem('quickReactions', quickReactions);
     }
 
     function toggleSettings() {
@@ -349,22 +344,19 @@
       panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
     }
 
-    function toggleReactionPicker() {
-      const reactionPicker = document.getElementById('reaction-picker');
-      reactionPicker.style.display = reactionPicker.style.display === 'block' ? 'none' : 'block';
-      
-      // Clear existing buttons in the picker
-      const pickerButtons = document.getElementById('reaction-picker').getElementsByTagName('button');
-      while (pickerButtons.length > 0) {
-        pickerButtons[0].remove();
-      }
+    function changeTheme() {
+      const theme = document.getElementById('theme-select').value;
+      document.body.style.backgroundColor = theme === 'dark' ? '#333' : '#f5f7fb';
+    }
 
-      // Add buttons for each reaction emoji from settings
-      quickReactions.forEach(emoji => {
-        const button = document.createElement('button');
-        button.textContent = emoji;
-        button.onclick = () => sendQuickReaction();  // Send as message
-        document.getElementById('reaction-picker').appendChild(button);
+    function toggleReactionPicker() {
+      const picker = document.getElementById('reaction-picker');
+      picker.style.display = picker.style.display === 'block' ? 'none' : 'block';
+      quickReactions.forEach(reaction => {
+        const reactionButton = document.createElement('button');
+        reactionButton.textContent = reaction;
+        reactionButton.onclick = () => sendQuickReaction(reaction);
+        picker.appendChild(reactionButton);
       });
     }
   </script>
