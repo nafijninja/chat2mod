@@ -1,29 +1,39 @@
 {
   "name": "messenger-clone",
   "version": "1.0.0",
-  "description": "A Messenger Clone App",
+  "description": "A clone of a messaging app with chat, file upload, reactions, and more.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "build": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "keywords": [
+    "chat",
+    "messenger",
+    "clone",
+    "app",
+    "nodejs",
+    "socket.io",
+    "mongodb",
+    "file-upload"
+  ],
+  "author": "NAFIJ",
+  "license": "ISC",
   "dependencies": {
     "archiver": "^5.3.0",
+    "axios": "^1.0.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "mongoose": "^7.3.1",
-    "multer": "^1.4.5-lts.1",
+    "express": "^4.17.3",
+    "moment": "^2.29.1",
+    "mongoose": "^6.0.0",
+    "multer": "^1.4.3",
     "path": "^0.12.7",
-    "socket.io": "^4.7.2",
-    "nodemon": "^2.0.22"
+    "socket.io": "^4.3.2",
+    "dotenv": "^16.0.0",
+    "fs": "0.0.1-security"
   },
-  "devDependencies": {},
-  "engines": {
-    "node": ">=16.0.0"
-  },
-  "author": "NAFIJ",
-  "license": "MIT"
+  "devDependencies": {
+    "nodemon": "^2.0.19"
+  }
 }
