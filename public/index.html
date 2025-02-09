@@ -241,18 +241,7 @@
     </div>
 
     <!-- Reaction Picker -->
-    <div id="reaction-picker">
-      <button onclick="sendQuickReaction('😊')">😊</button>
-      <button onclick="sendQuickReaction('😂')">😂</button>
-      <button onclick="sendQuickReaction('❤️')">❤️</button>
-      <button onclick="sendQuickReaction('😎')">😎</button>
-      <button onclick="sendQuickReaction('👍')">👍</button>
-      <button onclick="sendQuickReaction('🔥')">🔥</button>
-      <button onclick="sendQuickReaction('🎉')">🎉</button>
-      <button onclick="sendQuickReaction('😭')">😭</button>
-      <button onclick="sendQuickReaction('😡')">😡</button>
-      <button onclick="sendQuickReaction('🤩')">🤩</button>
-    </div>
+    <div id="reaction-picker"></div>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
@@ -287,12 +276,16 @@
       messageElement.classList.add('message');
       messageElement.setAttribute('data-id', msg._id); // Store message ID for reactions
 
+      const timestamp = new Date(msg.timestamp);
+      const hours = timestamp.getHours();
+      const minutes = timestamp.getMinutes();
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const formattedTime = `${(hours % 12) || 12}:${minutes < 10 ? '0' + minutes : minutes} ${ampm}`;
+
       if (msg.fileUrl) {
-        messageElement.innerHTML = `<strong>${msg.user}:</strong> <a href="${msg.fileUrl}" target="_blank">${msg.fileName}</a>`;
+        messageElement.innerHTML = `<strong>${msg.user}:</strong> <a href="${msg.fileUrl}" target="_blank">${msg.fileName}</a> <span class="timestamp">${formattedTime}</span>`;
       } else {
-        const timestamp = new Date(msg.timestamp);
-        const timeString = `${timestamp.getHours()}:${timestamp.getMinutes().toString().padStart(2, '0')}`;
-        messageElement.innerHTML = `<strong>${msg.user}:</strong> <span class="timestamp">${timeString}</span> ${msg.text || msg.reaction || ''}`;
+        messageElement.innerHTML = `<strong>${msg.user}:</strong> ${msg.text || msg.reaction || ''} <span class="timestamp">${formattedTime}</span>`;
       }
 
       // Add quick reaction button
@@ -312,57 +305,75 @@
       const fileInput = document.getElementById('file-input');
       const file = fileInput.files[0];
       if (file) {
-        const reader = new FileReader();
-        reader.onload = function (e) {
-          const base64File = e.target.result;
-          socket.emit('chat message', {
-            text: file.name,
-            fileUrl: base64File,
-            fileName: file.name,
-            user: username
-          });
-        };
-        reader.readAsDataURL(file);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        fetch('/upload', { method: 'POST', body: formData })
+          .then(response => response.json())
+          .then(data => {
+            if (data.fileUrl) {
+              socket.emit('file message', { fileUrl: data.fileUrl, fileName: data.fileName, user: username });
+            }
+          })
+          .catch(error => console.error('Error uploading file:', error));
       }
     }
 
-    // Handle quick reactions
+    socket.on('file message', displayMessage);
+
+    // Quick Reactions
     function sendQuickReaction(messageId) {
-      const reaction = prompt('Enter a reaction emoji:');
-      if (reaction) {
-        socket.emit('chat reaction', { messageId, reaction });
-      }
+      const reaction = quickReactions[Math.floor(Math.random() * quickReactions.length)];
+      socket.emit('chat reaction', { messageId, reaction, user: username });
     }
 
-    function toggleSettings() {
-      const settingsPanel = document.getElementById('settings-panel');
-      settingsPanel.style.display = settingsPanel.style.display === 'block' ? 'none' : 'block';
-    }
+    socket.on('chat reaction', (reactionData) => {
+      const messageElement = document.querySelector(`[data-id="${reactionData.messageId}"]`);
+      if (messageElement) {
+        const reactionSpan = document.createElement('span');
+        reactionSpan.textContent = ` ${reactionData.reaction}`;
+        messageElement.appendChild(reactionSpan);
+      }
+    });
 
     function saveUsername() {
-      const usernameInput = document.getElementById('username');
-      username = usernameInput.value.trim() || 'Anonymous';
+      username = document.getElementById('username').value;
       localStorage.setItem('username', username);
       socket.emit('set username', username);
     }
 
     function saveReactions() {
-      const reactionInput = document.getElementById('reaction-emoji');
-      quickReactions = reactionInput.value.split(',').map(reaction => reaction.trim());
-      localStorage.setItem('quickReactions', quickReactions);
+      quickReactions = document.getElementById('reaction-emoji').value.split(',');
+      localStorage.setItem('quickReactions', quickReactions.join(','));
     }
 
     function changeTheme() {
-      const themeSelect = document.getElementById('theme-select');
-      const theme = themeSelect.value;
-      document.body.style.backgroundColor = theme === 'dark' ? '#2c2c2c' : '#f5f7fb';
-      document.getElementById('chat-container').style.backgroundColor = theme === 'dark' ? '#444' : '#fff';
+      const theme = document.getElementById('theme-select').value;
+      document.body.style.backgroundColor = theme === 'dark' ? '#333' : '#f5f7fb';
     }
 
-    // Toggle reaction picker
+    function toggleSettings() {
+      const panel = document.getElementById('settings-panel');
+      panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+    }
+
     function toggleReactionPicker() {
-      const picker = document.getElementById('reaction-picker');
-      picker.style.display = picker.style.display === 'block' ? 'none' : 'block';
+      const reactionPicker = document.getElementById('reaction-picker');
+      reactionPicker.style.display = reactionPicker.style.display === 'block' ? 'none' : 'block';
+      
+      // Clear existing buttons in the picker
+      const pickerButtons = document.getElementById('reaction-picker').getElementsByTagName('button');
+      while (pickerButtons.length > 0) {
+        pickerButtons[0].remove();
+      }
+
+      // Add buttons for each reaction emoji from settings
+      quickReactions.forEach(emoji => {
+        const button = document.createElement('button');
+        button.textContent = emoji;
+        button.onclick = () => sendQuickReaction(emoji);
+        document.getElementById('reaction-picker').appendChild(button);
+      });
     }
   </script>
 </body>
