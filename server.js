@@ -121,19 +121,15 @@ io.on('connection', async (socket) => {
   });
 
   // Handle quick reactions
-  socket.on('chat reaction', async (reactionData) => {
-    const message = await Message.findById(reactionData.messageId);
-    if (message) {
-      // Update the message with the new reaction
-      message.reaction = reactionData.reaction;
-      await message.save();
+  socket.on('send quick reaction', async (reactionEmoji) => {
+    const message = new Message({ user: users[socket.id] || 'Anonymous', reaction: reactionEmoji });
+    await message.save();
 
-      // Emit the updated message with AM/PM formatted timestamp
-      io.emit('chat reaction', {
-        ...message.toObject(),
-        timestamp: moment(message.timestamp).format('hh:mm A')
-      });
-    }
+    // Emit the quick reaction message with AM/PM formatted timestamp
+    io.emit('chat reaction', {
+      ...message.toObject(),
+      timestamp: moment(message.timestamp).format('hh:mm A')
+    });
   });
 
   socket.on('disconnect', () => {
