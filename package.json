@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "description": "A chat application with file uploads, quick reactions, and MongoDB storage",
   "main": "server.js",
-  "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+"scripts": {
+  "start": "node server.js"
+
   },
   "dependencies": {
     "archiver": "^5.3.1",
