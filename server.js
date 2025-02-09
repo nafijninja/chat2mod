@@ -99,10 +99,17 @@ io.on('connection', async (socket) => {
     io.emit('file message', message);
   });
 
+  // Handle quick reactions
   socket.on('chat reaction', async (reactionData) => {
-    const message = new Message({ user: users[socket.id] || 'Anonymous', reaction: reactionData.reaction });
-    await message.save();
-    io.emit('chat reaction', message);
+    const message = await Message.findById(reactionData.messageId);
+    if (message) {
+      // Update the message with the new reaction
+      message.reaction = reactionData.reaction;
+      await message.save();
+
+      // Broadcast the updated message with the reaction
+      io.emit('chat reaction', message);
+    }
   });
 
   socket.on('disconnect', () => {
