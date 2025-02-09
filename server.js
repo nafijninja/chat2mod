@@ -8,7 +8,6 @@ const cors = require('cors');
 const fs = require('fs');
 const mongoose = require('mongoose');
 const archiver = require('archiver');
-const moment = require('moment'); // Import Moment.js for timestamp formatting
 
 const app = express();
 const server = http.createServer(app);
@@ -72,66 +71,60 @@ app.post('/upload', upload.single('file'), async (req, res) => {
 // Get messages from MongoDB
 app.get('/messages', async (req, res) => {
   const messages = await Message.find().sort('timestamp');
-  // Format timestamp to AM/PM format using Moment.js
-  const formattedMessages = messages.map(msg => ({
-    ...msg.toObject(),
-    timestamp: moment(msg.timestamp).format('hh:mm A') // AM/PM format
-  }));
-  res.json(formattedMessages);
+  res.json(messages);
 });
 
 const users = {}; // Store usernames
 
+// Handle socket events
 io.on('connection', async (socket) => {
   console.log('User connected:', socket.id);
 
-  // Send stored messages with formatted timestamps
-  const messages = await Message.find().sort('timestamp');
-  const formattedMessages = messages.map(msg => ({
-    ...msg.toObject(),
-    timestamp: moment(msg.timestamp).format('hh:mm A') // AM/PM format
-  }));
-  socket.emit('load messages', formattedMessages);
+  // Send stored messages
+  socket.emit('load messages', await Message.find().sort('timestamp'));
 
+  // Set username
   socket.on('set username', (username) => {
     users[socket.id] = username;
     console.log('Username set:', username);
   });
 
+  // Handle chat messages
   socket.on('chat message', async (msg) => {
-    const message = new Message({ user: users[socket.id] || 'Anonymous', text: msg.text });
-    await message.save();
-
-    // Emit the message with AM/PM formatted timestamp
-    io.emit('chat message', {
-      ...message.toObject(),
-      timestamp: moment(message.timestamp).format('hh:mm A')
+    const message = new Message({
+      user: users[socket.id] || 'Anonymous', 
+      text: msg.text,
+      timestamp: new Date()  // Ensure the timestamp is correctly set
     });
+    await message.save();
+    io.emit('chat message', message);
   });
 
+  // Handle file messages
   socket.on('file message', async (fileData) => {
-    const message = new Message({ user: users[socket.id] || 'Anonymous', fileUrl: fileData.fileUrl, fileName: fileData.fileName });
-    await message.save();
-
-    // Emit the file message with AM/PM formatted timestamp
-    io.emit('file message', {
-      ...message.toObject(),
-      timestamp: moment(message.timestamp).format('hh:mm A')
+    const message = new Message({
+      user: users[socket.id] || 'Anonymous', 
+      fileUrl: fileData.fileUrl, 
+      fileName: fileData.fileName,
+      timestamp: new Date()  // Ensure the timestamp is correctly set
     });
+    await message.save();
+    io.emit('file message', message);
   });
 
-  // Handle quick reactions
-  socket.on('send quick reaction', async (reactionEmoji) => {
-    const message = new Message({ user: users[socket.id] || 'Anonymous', reaction: reactionEmoji });
-    await message.save();
-
-    // Emit the quick reaction message with AM/PM formatted timestamp
-    io.emit('chat reaction', {
-      ...message.toObject(),
-      timestamp: moment(message.timestamp).format('hh:mm A')
+  // Handle chat reactions
+  socket.on('chat reaction', async (reactionData) => {
+    // Treat reaction as a message by storing it as text
+    const message = new Message({
+      user: users[socket.id] || 'Anonymous', 
+      text: `${reactionData.reaction}`, // Treat reaction as a message
+      timestamp: new Date()  // Ensure the timestamp is correctly set
     });
+    await message.save();
+    io.emit('chat message', message);  // Emit the reaction as a normal message
   });
 
+  // Handle user disconnect
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
     delete users[socket.id];
