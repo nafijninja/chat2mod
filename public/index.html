@@ -290,7 +290,9 @@
       if (msg.fileUrl) {
         messageElement.innerHTML = `<strong>${msg.user}:</strong> <a href="${msg.fileUrl}" target="_blank">${msg.fileName}</a>`;
       } else {
-        messageElement.innerHTML = `<strong>${msg.user}:</strong> ${msg.text || msg.reaction || ''}`;
+        const timestamp = new Date(msg.timestamp);
+        const timeString = `${timestamp.getHours()}:${timestamp.getMinutes().toString().padStart(2, '0')}`;
+        messageElement.innerHTML = `<strong>${msg.user}:</strong> <span class="timestamp">${timeString}</span> ${msg.text || msg.reaction || ''}`;
       }
 
       // Add quick reaction button
@@ -310,60 +312,59 @@
       const fileInput = document.getElementById('file-input');
       const file = fileInput.files[0];
       if (file) {
-        const formData = new FormData();
-        formData.append('file', file);
-
-        fetch('/upload', { method: 'POST', body: formData })
-          .then(response => response.json())
-          .then(data => {
-            if (data.fileUrl) {
-              socket.emit('file message', { fileUrl: data.fileUrl, fileName: data.fileName, user: username });
-            }
-          })
-          .catch(error => console.error('Error uploading file:', error));
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const base64File = e.target.result;
+          socket.emit('chat message', {
+            text: file.name,
+            fileUrl: base64File,
+            fileName: file.name,
+            user: username
+          });
+        };
+        reader.readAsDataURL(file);
       }
     }
 
-    socket.on('file message', displayMessage);
-
-    // Quick Reactions
+    // Handle quick reactions
     function sendQuickReaction(messageId) {
-      const reaction = quickReactions[Math.floor(Math.random() * quickReactions.length)];
-      socket.emit('chat reaction', { messageId, reaction, user: username });
+      const reaction = prompt('Enter a reaction emoji:');
+      if (reaction) {
+        socket.emit('chat reaction', { messageId, reaction });
+      }
     }
 
-    socket.on('chat reaction', (reactionData) => {
-      const messageElement = document.querySelector(`[data-id="${reactionData.messageId}"]`);
-      if (messageElement) {
-        const reactionSpan = document.createElement('span');
-        reactionSpan.textContent = ` ${reactionData.reaction}`;
-        messageElement.appendChild(reactionSpan);
-      }
-    });
+    function toggleSettings() {
+      const settingsPanel = document.getElementById('settings-panel');
+      settingsPanel.style.display = settingsPanel.style.display === 'block' ? 'none' : 'block';
+    }
 
     function saveUsername() {
-      username = document.getElementById('username').value;
+      const usernameInput = document.getElementById('username');
+      username = usernameInput.value.trim() || 'Anonymous';
       localStorage.setItem('username', username);
       socket.emit('set username', username);
     }
 
     function saveReactions() {
-      quickReactions = document.getElementById('reaction-emoji').value.split(',');
-      localStorage.setItem('quickReactions', quickReactions.join(','));
+      const reactionInput = document.getElementById('reaction-emoji');
+      quickReactions = reactionInput.value.split(',').map(reaction => reaction.trim());
+      localStorage.setItem('quickReactions', quickReactions);
     }
 
     function changeTheme() {
-      const theme = document.getElementById('theme-select').value;
-      document.body.style.backgroundColor = theme === 'dark' ? '#333' : '#f5f7fb';
+      const themeSelect = document.getElementById('theme-select');
+      const theme = themeSelect.value;
+      document.body.style.backgroundColor = theme === 'dark' ? '#2c2c2c' : '#f5f7fb';
+      document.getElementById('chat-container').style.backgroundColor = theme === 'dark' ? '#444' : '#fff';
     }
 
-    function toggleSettings() {
-      const panel = document.getElementById('settings-panel');
-      panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+    // Toggle reaction picker
+    function toggleReactionPicker() {
+      const picker = document.getElementById('reaction-picker');
+      picker.style.display = picker.style.display === 'block' ? 'none' : 'block';
     }
   </script>
-
-
 </body>
 
 </html>
