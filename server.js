@@ -112,16 +112,16 @@ io.on('connection', async (socket) => {
     io.emit('file message', message);
   });
 
-  // Handle chat reactions
+  // Handle chat reactions as regular messages
   socket.on('chat reaction', async (reactionData) => {
-    // Treat reaction as a message by storing it as text
+    // Treat reaction as a message text (e.g., "❤️")
     const message = new Message({
       user: users[socket.id] || 'Anonymous', 
-      text: `${reactionData.reaction}`, // Treat reaction as a message
+      text: reactionData.reaction,  // Send only the reaction as message text
       timestamp: new Date()  // Ensure the timestamp is correctly set
     });
     await message.save();
-    io.emit('chat message', message);  // Emit the reaction as a normal message
+    io.emit('chat message', message);  // Emit the reaction as a regular message
   });
 
   // Handle user disconnect
