@@ -35,7 +35,6 @@ const messageSchema = new mongoose.Schema({
   text: String,
   fileUrl: String,
   fileName: String,
-  reaction: String,
   timestamp: { type: Date, default: Date.now }
 });
 const Message = mongoose.model('Message', messageSchema);
@@ -64,7 +63,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
   const message = new Message({ user: 'Anonymous', fileUrl, fileName: req.file.originalname });
   await message.save();
 
-  io.emit('file message', { user: 'Anonymous', fileUrl, fileName: req.file.originalname });
+  io.emit('chat message', { user: 'Anonymous', text: req.file.originalname });
   res.json({ fileUrl, fileName: req.file.originalname });
 });
 
@@ -76,55 +75,35 @@ app.get('/messages', async (req, res) => {
 
 const users = {}; // Store usernames
 
-// Handle socket events
 io.on('connection', async (socket) => {
   console.log('User connected:', socket.id);
 
   // Send stored messages
   socket.emit('load messages', await Message.find().sort('timestamp'));
 
-  // Set username
   socket.on('set username', (username) => {
     users[socket.id] = username;
     console.log('Username set:', username);
   });
 
-  // Handle chat messages
   socket.on('chat message', async (msg) => {
-    const message = new Message({
-      user: users[socket.id] || 'Anonymous', 
-      text: msg.text,
-      timestamp: new Date()  // Ensure the timestamp is correctly set
-    });
+    const message = new Message({ user: users[socket.id] || 'Anonymous', text: msg.text });
     await message.save();
     io.emit('chat message', message);
   });
 
-  // Handle file messages
   socket.on('file message', async (fileData) => {
-    const message = new Message({
-      user: users[socket.id] || 'Anonymous', 
-      fileUrl: fileData.fileUrl, 
-      fileName: fileData.fileName,
-      timestamp: new Date()  // Ensure the timestamp is correctly set
-    });
+    const message = new Message({ user: users[socket.id] || 'Anonymous', fileUrl: fileData.fileUrl, fileName: fileData.fileName });
     await message.save();
-    io.emit('file message', message);
+    io.emit('chat message', message);
   });
 
-  // Handle chat reactions as regular messages
   socket.on('chat reaction', async (reactionData) => {
-    // Treat reaction as a message text (e.g., "❤️")
-    const message = new Message({
-      user: users[socket.id] || 'Anonymous', 
-      text: reactionData.reaction,  // Send only the reaction as message text
-      timestamp: new Date()  // Ensure the timestamp is correctly set
-    });
+    const message = new Message({ user: users[socket.id] || 'Anonymous', text: reactionData.reaction });
     await message.save();
-    io.emit('chat message', message);  // Emit the reaction as a regular message
+    io.emit('chat message', message);
   });
 
-  // Handle user disconnect
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
     delete users[socket.id];
