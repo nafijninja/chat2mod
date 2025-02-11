@@ -144,5 +144,37 @@ app.get('/files-download', (req, res) => {
   archive.finalize();
 });
 
+// Serve static files (e.g., HTML, CSS, JS)
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Route for the private chat page
+app.get('/private', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'private.html'));
+});
+
+// Socket.IO logic for private chat
+io.on('connection', (socket) => {
+  console.log('A user connected');
+
+  // Private chat logic here
+  socket.on('join private', (data) => {
+    const roomId = data.roomId;
+    socket.join(roomId);
+    socket.emit('private status', `Joined private room: ${roomId}`);
+  });
+
+  socket.on('private message', (data) => {
+    io.to(data.roomId).emit('private message', {
+      sender: data.sender,
+      message: data.message
+    });
+  });
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected');
+  });
+});
+  
+                           
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`🚀 Server is running on port ${PORT}`));
