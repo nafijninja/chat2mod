@@ -4,8 +4,10 @@
   "description": "A clone of a messaging app with chat, file upload, reactions, and more.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node server.js",node server1.js
     "dev": "nodemon server.js",
+
+    
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
