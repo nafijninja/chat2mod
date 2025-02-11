@@ -4,10 +4,10 @@
   "description": "A clone of a messaging app with chat, file upload, reactions, and more.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",node server1.js
+    "start": "node server.js",
     "dev": "nodemon server.js",
-
-    
+    "start-private": "node server1.js", // New script to start private chat server
+    "dev-private": "nodemon server1.js", // New script to start private chat server in dev mode
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
